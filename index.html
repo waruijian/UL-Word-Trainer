@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>日文學習 APP - V2.2.2 Modern</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#3b82f6">
-    <link rel="apple-touch-icon" href="icon-192.png">
     
     <script type="module">
   // 1. 導入 Firebase 模組
@@ -81,6 +78,40 @@
       alert("備份失敗，請確認資料庫 Rules 已改為測試模式");
     }
   };
+
+  // 必須使用 window.pullFromCloud，否則 HTML 的 onclick 會找不到
+window.pullFromCloud = async function() {
+    const user = auth.currentUser; // 確保這裡使用的是你初始化後的 auth 物件
+    if (!user) {
+        alert("請先登入！");
+        return;
+    }
+
+    try {
+        console.log("正在嘗試下載雲端進度...");
+        // 這裡的路徑必須與你 pushToCloud 時一致
+        const docRef = doc(db_cloud, "users", user.uid); 
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            console.log("下載成功:", data);
+            
+            if (confirm("找到雲端紀錄，是否覆蓋本地進度？")) {
+                // 這裡假設你的本地資料變數叫 db，請依實際名稱修改
+                db = data.word_db; 
+                save(); // 呼叫你的存檔函數
+                alert("下載成功！頁面將自動重新整理。");
+                location.reload(); 
+            }
+        } else {
+            alert("雲端沒有任何存檔紀錄。");
+        }
+    } catch (error) {
+        console.error("下載失敗:", error);
+        alert("下載失敗，請看控制台訊息。");
+    }
+};
 </script>
 </script>
     <style>
