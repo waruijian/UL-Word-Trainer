@@ -474,9 +474,51 @@ window.pullFromCloud = async function() {
 
     function renderKanjiOptions() {
         const w = quizSet[qIdx];
-        let distractorStrings = generateSimilarKana(w.kana, 3);
-        currentOptions = [{kana: w.kana}, {kana: distractorStrings[0]}, {kana: distractorStrings[1]}, {kana: distractorStrings[2]}].sort(() => Math.random() - 0.5);
-        document.getElementById('optionsGrid').innerHTML = currentOptions.map((opt, i) => `<button class="option-btn" style="background:#1e293b; border:1px solid #334155; color:white; padding:18px; border-radius:14px; font-weight:600;" onclick="checkOption(${i}, this)">${opt.kana}</button>`).join('');
+        
+        // --- 新增邏輯：自動分離「漢字發音」與「送假名(或前綴)」 ---
+        let prefix = "";
+        let suffix = "";
+        let stemKana = w.kana;
+        
+        // 只有當單字和假名不同時（代表裡面有漢字）才進行比對剝離
+        if (w.display && w.kana && w.display !== w.kana) {
+            // 1. 找尋相同的前綴 (例如：「お酒」的「お」)
+            let start = 0;
+            while(start < w.display.length && start < w.kana.length && w.display[start] === w.kana[start]) { 
+                start++; 
+            }
+            
+            // 2. 找尋相同的後綴/送假名 (例如：「新しい」的「しい」)
+            let endD = w.display.length - 1;
+            let endK = w.kana.length - 1;
+            while(endD >= start && endK >= start && w.display[endD] === w.kana[endK]) { 
+                endD--; 
+                endK--; 
+            }
+            
+            // 3. 擷取各部分
+            prefix = w.kana.substring(0, start);
+            suffix = w.kana.substring(endK + 1);
+            stemKana = w.kana.substring(start, endK + 1); // 這就是純漢字的發音部分
+        }
+        
+        // 防呆：如果剝離後變空的，就退回使用完整假名
+        if (!stemKana) stemKana = w.kana;
+
+        // --- 針對「純漢字部分(stemKana)」產生 3 個誘答 ---
+        let distractorStems = generateSimilarKana(stemKana, 3);
+        
+        // --- 將前綴、變形後的漢字發音、後綴 重新組裝回來 ---
+        currentOptions = [
+            { kana: w.kana }, // 正確答案
+            { kana: prefix + distractorStems[0] + suffix },
+            { kana: prefix + distractorStems[1] + suffix },
+            { kana: prefix + distractorStems[2] + suffix }
+        ].sort(() => Math.random() - 0.5); // 打亂順序
+
+        document.getElementById('optionsGrid').innerHTML = currentOptions.map((opt, i) => 
+            `<button class="option-btn" style="background:#1e293b; border:1px solid #334155; color:white; padding:18px; border-radius:14px; font-weight:600;" onclick="checkOption(${i}, this)">${opt.kana}</button>`
+        ).join('');
     }
     
     function checkOption(idx, btn) {
