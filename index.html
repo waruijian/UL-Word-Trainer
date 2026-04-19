@@ -679,8 +679,8 @@ window.pullFromCloud = async function() {
             </div>`).join('');
         document.getElementById('import-book-select').innerHTML = db.books.map(b => `<option value="${b}">${b}</option>`) + `<option value="NEW">+ 新增單字本</option>`;
         updateUI();
-    
     }
+    
     function updateUI() {
         document.getElementById('mode-spell').classList.toggle('active', db.config.quizMode === 'spell');
         document.getElementById('mode-recognize').classList.toggle('active', db.config.quizMode === 'recognize');
